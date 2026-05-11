@@ -64,7 +64,17 @@ wire POTGO_decode = A[23:1] == {20'hDFF03, 3'b010};  // POTGO DFF034
 wire CIAAPRA_decode = A[23:8] == {20'hBFE0}; // CIAAPRA BFE001  
 wire CIAADRA_decode = A[23:0] == {24'hBFE201}; // CIAADDRA BFE201
 
-wire Direct_Access = A[23:1] == {23'hBA000, 3'b011}; // Direct access to set up sensitivity
+// Direct access window widened from a single byte ($BA0006) to a 64-byte
+// region ($BA0000..$BA003F).  The STM32 can only distinguish A[5:0] of the
+// triggering address (PC4/PC6/PC7/PA10/PA15/PC9 are the only address bits
+// routed to it), so 64 bytes is the maximum useful range. The existing
+// $BA0006 mouse-sensitivity register is preserved -- it still falls within
+// the new window and the firmware's case 0x06 still handles it.
+//
+// This makes the firmware's previously-unreachable registers in the $BA-page
+// (gamepad map, live USB-button state, per-port device type) actually
+// addressable from the Amiga bus.
+wire Direct_Access = A[23:6] == 18'h2E800; // $BA0000..$BA003F  (= 0xBA0000 >> 6)
 
 wire enable = INTSIG6 == 1'b1;		//Enable ports override
 
